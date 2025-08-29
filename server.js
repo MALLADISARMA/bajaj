@@ -1,7 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const fs = require('fs');
-const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,59 +7,14 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
-let USER_INFO;
-try {
-    // First try to load from environment variables (for production)
-    if (process.env.FULL_NAME && process.env.BIRTH_DATE && process.env.EMAIL && process.env.ROLL_NUMBER) {
-        USER_INFO = {
-            full_name: process.env.FULL_NAME,
-            birth_date: process.env.BIRTH_DATE,
-            email: process.env.EMAIL,
-            roll_number: process.env.ROLL_NUMBER
-        };
-        console.log('✅ User configuration loaded from environment variables');
-    } else {
-        // Fallback to config file (for local development)
-        const configPath = path.join(__dirname, 'user-config.json');
-        if (fs.existsSync(configPath)) {
-            USER_INFO = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-            console.log('✅ User configuration loaded from file:', USER_INFO.full_name);
-        } else {
-            // Default values if nothing is found
-            USER_INFO = {
-                full_name: "john_doe",
-                birth_date: "17091999",
-                email: "john@xyz.com",
-                roll_number: "ABCD123"
-            };
-            console.log('⚠️ Using default configuration');
-        }
-    }
-} catch (error) {
-    console.error('❌ Error loading user configuration:', error.message);
-    process.exit(1);
-}
 
-// Load user configuration
-let USER_INFO;
-try {
-    const configPath = path.join(__dirname, 'user-config.json');
-    if (fs.existsSync(configPath)) {
-        USER_INFO = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-        console.log('✅ User configuration loaded:', USER_INFO.full_name);
-    } else {
-        console.log('⚠️  No user configuration found. Run "npm run setup" first.');
-        USER_INFO = {
-            full_name: "john_doe",
-            birth_date: "17091999",
-            email: "john@xyz.com",
-            roll_number: "ABCD123"
-        };
-    }
-} catch (error) {
-    console.error('❌ Error loading user configuration:', error.message);
-    process.exit(1);
-}
+// Your personal details - UPDATE THESE WITH YOUR ACTUAL INFO
+const USER_INFO = {
+    full_name: "john_doe", // Replace with your actual name in lowercase
+    birth_date: "17091999", // Replace with your birth date in ddmmyyyy format
+    email: "john@xyz.com", // Replace with your actual email
+    roll_number: "ABCD123" // Replace with your actual roll number
+};
 
 // Helper function to check if a character is a number
 function isNumber(char) {
@@ -205,70 +158,11 @@ app.get('/bfhl', (req, res) => {
 app.get('/', (req, res) => {
     res.json({
         message: "BFHL API is running",
-        user_info: {
-            user_id: `${USER_INFO.full_name}_${USER_INFO.birth_date}`,
-            email: USER_INFO.email,
-            roll_number: USER_INFO.roll_number
-        },
         endpoints: {
             "POST /bfhl": "Main API endpoint",
-            "GET /bfhl": "Get operation code",
-            "GET /config": "View current configuration"
+            "GET /bfhl": "Get operation code"
         }
     });
-});
-
-// Configuration endpoint
-app.get('/config', (req, res) => {
-    res.json({
-        user_info: USER_INFO,
-        user_id: `${USER_INFO.full_name}_${USER_INFO.birth_date}`,
-        message: "Current user configuration"
-    });
-});
-
-// Update configuration endpoint (for convenience)
-app.post('/config', (req, res) => {
-    try {
-        const { full_name, birth_date, email, roll_number } = req.body;
-        
-        if (!full_name || !birth_date || !email || !roll_number) {
-            return res.status(400).json({
-                error: "All fields are required: full_name, birth_date, email, roll_number"
-            });
-        }
-
-        if (!/^\d{8}$/.test(birth_date)) {
-            return res.status(400).json({
-                error: "Birth date must be in DDMMYYYY format (8 digits)"
-            });
-        }
-
-        const newConfig = {
-            full_name: full_name.toLowerCase().replace(/\s+/g, '_'),
-            birth_date,
-            email,
-            roll_number
-        };
-
-        // Update global config
-        USER_INFO = newConfig;
-        
-        // Save to file
-        fs.writeFileSync('user-config.json', JSON.stringify(newConfig, null, 2));
-
-        res.json({
-            message: "Configuration updated successfully",
-            user_info: newConfig,
-            user_id: `${newConfig.full_name}_${newConfig.birth_date}`
-        });
-
-    } catch (error) {
-        console.error('Error updating configuration:', error);
-        res.status(500).json({
-            error: "Failed to update configuration"
-        });
-    }
 });
 
 // Error handling middleware
@@ -289,11 +183,8 @@ app.use('*', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 Server is running on port ${PORT}`);
-    console.log(`📍 API endpoint: http://localhost:${PORT}/bfhl`);
-    console.log(`👤 User ID: ${USER_INFO.full_name}_${USER_INFO.birth_date}`);
-    console.log(`📧 Email: ${USER_INFO.email}`);
-    console.log(`🎓 Roll Number: ${USER_INFO.roll_number}`);
+    console.log(`Server is running on port ${PORT}`);
+    console.log(`API endpoint: http://localhost:${PORT}/bfhl`);
 });
 
 module.exports = app;
